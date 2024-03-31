@@ -1,0 +1,52 @@
+import sys
+import spacy
+from collections import defaultdict
+
+# Carrega o modelo SpaCy para a língua portuguesa
+nlp = spacy.load('pt_core_news_sm')
+
+def carregar_documentos(caminho_arquivo):
+    with open(caminho_arquivo, 'r', encoding='utf-8') as arquivo:
+        return [linha.strip() for linha in arquivo]
+
+def preprocessamento(texto):
+    doc = nlp(texto)
+    # Filtra os tokens que não são stopwords e obtém a forma canônica (lemma) de cada token
+    return [(token.lemma_, token.idx) for 
+            token in doc 
+            if not token.is_stop and token.is_alpha]
+def gerar_indice_invertido(documentos):
+    # Cria um defaultdict de defaultdict de list para o índice invertido
+    indice_invertido = defaultdict(lambda: defaultdict(list))
+
+    # Itera sobre os documentos usando enumerate para obter o índice (idx) e o caminho do documento
+    for idx, caminho in enumerate(documentos):
+        # Abre o arquivo e realiza o preprocessamento do texto
+        with open(caminho, 'r', encoding='utf-8') as arquivo:
+            termos = preprocessamento(arquivo.read())
+            
+            # Compreensão de lista para atualizar o índice invertido com as ocorrências dos termos
+            [indice_invertido[termo][idx].append(posicao) for posicao, (termo, _) in enumerate(termos)]
+
+    # Imprime uma mensagem informativa
+    print("Termo em suas ocorrências nos documentos")
+    
+    # Converte os defaultdict para dicionários regulares e retorna o índice invertido
+    return {termo: dict(ocorrencias) for termo, ocorrencias in indice_invertido.items()}
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("Uso: python indice.py caminho_base.txt")
+        sys.exit(1)
+
+    caminho_base = sys.argv[1]
+    documentos = carregar_documentos(caminho_base)
+    indice = gerar_indice_invertido(documentos)
+
+    # Exemplo de impressão do índice invertido
+    for termo, ocorrencias in indice.items():
+        print(f"{termo}: {ocorrencias}")
+
+if __name__ == "__main__":
+    main()
